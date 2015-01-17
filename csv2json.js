@@ -7,7 +7,6 @@ var version = 'v0.0.1';
 var app = require('commander'),
     fs = require('fs'),
     exec = require('child_process').exec,
-    app = require('commander'),
     chalk = require('chalk'),
     _ = require('lodash');
 
@@ -26,13 +25,8 @@ var init = function() {
             console.log('ain\'t nobody got time for that');
         })
         .parse(process.argv);
-        /*
-        Pass in arguments with defaults
-        */
         input = app.input;
         output = app.output;
-        /* Start processing chain */
-        
         convertCSV();
 
     } catch (e) {
@@ -41,14 +35,31 @@ var init = function() {
 };
 
 var convertCSV = function () {
-    console.log(chalk.blue("Running convertCSV"));
-    mainInput = fs.readdirSync(input);
+    console.log(chalk.blue("Converting CSVs"));
+    var mainInput = fs.readdirSync(input),
+        inputArr, outputArr, keys, fileName;
 
     _.each(mainInput, function(file) {
+        outputArr = [];
         stat = fs.statSync(input + "/" + file);
         if (stat.isFile() && file.indexOf('.csv') > 0) {
-            var cvsContents = fs.readFileSync(input + "/" + file);
-            console.log(cvsContents.toString());
+            fileName = file.split('.csv')[0];
+            console.log(chalk.green("Reading "+ fileName + ".csv"));
+            inputArr = fs.readFileSync(input + "/" + file)
+                .toString()
+                .replace(/\r/g,'\n')
+                .split('\n');
+            keys = inputArr
+                .shift()
+                .split(',');
+
+            _.each(inputArr, function(row) {
+                row = row.split(',');
+                outputArr.push(JSON.stringify(_.zipObject(keys, row)));
+            });
+
+            fs.writeFileSync(output + '/' + fileName + ".json", "[" + outputArr + "]", "utf-8");
+            console.log(chalk.yellow("Writing "+ fileName + ".json"));
         }
     });
     
